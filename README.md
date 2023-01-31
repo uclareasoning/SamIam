@@ -7,7 +7,6 @@ It contains two directories:
 
 The SamIam software is released at http://reasoning.cs.ucla.edu/samiam
 
-Feedback, bug reports, and questions can be sent to the email address
-
-     samiam@cs.ucla.edu
+Feedback, bug reports, and questions can be sent to the email address 
+    samiam@cs.ucla.edu
 

@@ -1,0 +1,6 @@
+#!/usr/local/bin/tcsh
+#Keith Cascio
+#041002
+
+set CPATH=~/source/inflib/compiled
+javah -classpath $CPATH edu.ucla.belief.io.dsl.SMILEReader

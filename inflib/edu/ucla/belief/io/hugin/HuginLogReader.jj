@@ -1,0 +1,525 @@
+//Keith Cascio
+//11/6/02
+
+PARSER_BEGIN(HuginLogReader)
+package edu.ucla.belief.io.hugin;
+
+import java.util.*;
+import java.io.*;
+import edu.ucla.belief.*;
+import edu.ucla.belief.io.*;
+import java.text.DecimalFormat;
+
+/**
+	HuginLogReader - a class that parses
+	Hugin ".hlg" files
+	and returns a String
+	representation of a dtree.
+	
+	@author Keith Cascio
+	@since 120602
+*/
+public class HuginLogReader
+{
+	public static boolean FLAG_DEBUG = false;
+	
+	public static final String STR_PAREN_LEFT = "( ";
+	public static final String STR_DELIMITER = " ";
+	public static final String STR_PAREN_RIGHT = " )";
+	
+    public static void main(String args[])
+    {
+		try
+		{
+			for(int i=0;i<args.length;i++)
+			{
+		    	BeliefNetworks.STREAM_TEST.println( "\n\nParsing file: \"" + args[i] + "\" ..." );
+				HuginLogReader reader = new HuginLogReader(new java.io.FileReader(new File(args[i])));
+				BeliefNetworks.STREAM_TEST.println( "\nDtree:\n\n" + reader.dtree() );
+			}
+		} catch(Exception e)
+		{
+			System.err.println(e);
+			e.printStackTrace();
+		}
+	}
+	
+	/**
+		@ret A 2 dimensional array defining the
+		parent/child tree structure.
+	*/
+	public boolean[][]	getJoinForest()
+	{
+		return myJoinForest;
+	}
+
+	/**
+		@ret A List of Integers designating the roots of the
+		join trees that make up the join forest.
+	*/
+	public int[]	getChildCounts()
+	{
+		return myChildCounts;
+	}
+
+	/**
+		@ret A List of Integers designating the roots of the
+		join trees that make up the join forest.
+	*/
+	public List getRoots()
+	{
+		return myRoots;
+	}
+	
+	/**
+		@ret A List of Strings, which are variable IDs.
+	*/
+	public List getEliminationOrder()
+	{
+		return myEliminationOrder;
+	}
+	
+	/**
+		@ret A List of HuginCliques.
+	*/
+	public List getCliques()
+	{
+		return myCliques;
+	}
+
+	/**
+		@ret A array of Lists of Strings, which are the variable IDs.
+	*/
+	public List[]	getAssignments()
+	{
+		return myAssignments;
+	}
+
+	public String dtree() throws ParseException
+	{
+		return dtree( true );
+	}
+	
+	public String dtree( boolean balanced ) throws ParseException
+	{
+		parse();
+		return makeDtree( balanced );
+	}
+	
+	/**
+		@since 121702
+	*/
+	public long getTotalCliqueTableSize()
+	{
+		return myTotalCliqueTableSize;
+	}
+	
+	/**
+		@since 121702
+	*/
+	public long getTotalSeparatorTableSize()
+	{
+		return myTotalSeparatorTableSize;
+	}
+	
+	protected long myTotalCliqueTableSize = (long)0;
+	protected long myTotalSeparatorTableSize = (long)0;
+	protected boolean[][] myJoinForest;
+	protected int[] myChildCounts;
+	protected List myRoots;
+	protected List[] myAssignments;
+	protected int myCurrentRowIndex;
+	protected List myEliminationOrder;
+	protected List myCliques;
+	
+	protected static DecimalFormat theFormat = new DecimalFormat( "000" );
+}
+
+PARSER_END(HuginLogReader)
+
+SKIP :
+{
+" "
+| "\t"
+| "\n"
+| "\r"
+}
+
+SPECIAL_TOKEN :
+{
+	<COMMENT: "%" (~["\n","\r"])* ("\n" | "\r" | "\r\n")> : DEFAULT
+}
+
+
+TOKEN :
+{
+<MORAL_LIT1: "Moral links:" > |
+<MORAL_LIT2: "Marrying" > |
+<AND_LIT: "and" > |
+<TRIAGULATE_LIT1: "Triangulating prime component with" > |
+<TRIAGULATE_LIT2: "members:" > |
+<TRIAGULATE_LIT3: "This component is a clique of cost" > |
+<TRIANGULATE_LIT5: "Using minimum fill-in weight heuristic for triangulation:" > |
+<TRIANGULATE_LIT6: "Eliminating" > |
+<TRIANGULATE_LIT7: "Creating fill-in between" > |
+<TRIANGULATE_LIT8: "Found triangulation of prime component of cost" > |
+
+<TRIAGULATE_LIT4: "Total cost of triangulation for all prime components is" > |
+<ELIMINATION_LIT: "Elimination sequence:" > |
+<CLIQUES_LIT1: "Cliques:"> |
+<CLIQUE_DECL_LIT1: "Clique" > |
+<CLIQUE_DECL_LIT2: "members (" > |
+<CLIQUE_DECL_LIT3: "), table size =" > |
+<CLIQUES_LIT2: "Total clique table size:" > |
+<JUNCTION_FOREST_LIT: "The junction forest:" > |
+<JUNCTION_TREE_DECL_LIT1: "Creating junction tree with clique" > |
+<JUNCTION_TREE_DECL_LIT2: "as root ..." > |
+<LINK_DECL_LIT1: "Cliques" > |
+<LINK_DECL_LIT2: "linked, separated by {" > |
+<LINK_DECL_LIT3: "} (table size =" > |
+<ASSIGNMENTS_LIT: "Assignment of potentials to cliques:" > |
+<ASSIGNMENTS_DECL_LIT1: "Node" > |
+<ASSIGNMENTS_DECL_LIT2: "assigned to clique" > |
+
+// N.B. the order of the RE tokens seems to make a difference
+// i.e. no definitions after <STRING>
+
+//Keith Cascio 031902 - added '.' to the set of acceptable ID characters
+<ID: ["a"-"z","A"-"Z","_"] (["a"-"z","A"-"Z","_","0"-"9", "."] )*> |
+<NUM: ("-")? ((["0"-"9"])+ | ((["0"-"9"])* "." (["0"-"9"])+)) (("E" | "e")("-")? (["0"-"9"])+)?   >
+
+//<ONELINE: ( (~["\n","\r"])* )* "\n" > |
+//<ONESTRING: (["a"-"z","A"-"Z","_","0"-"9", ":", ","])+ >
+//<ONESTRING: ( ~["\n","\r","\\","\"","="," "] )+ >
+
+}
+
+JAVACODE
+void printStats()
+{
+	BeliefNetworks.STREAM_VERBOSE.println( "\n\nparsed junction tree:\nroots: " + myRoots );
+	for( int i=1; i<myChildCounts.length; i++ )
+	{
+		BeliefNetworks.STREAM_VERBOSE.println( "#" + theFormat.format( i ) + " -> |" + myChildCounts[i] + "| : " + myAssignments[i] );
+	}
+	BeliefNetworks.STREAM_VERBOSE.println( "\n" );
+}
+
+JAVACODE
+String makeDtree( boolean balanced )
+{
+	if( FLAG_DEBUG ) printStats();
+	
+	String ret;
+	int intRoot;
+	
+	Iterator it = myRoots.iterator();
+	if( it.hasNext() )
+	{
+		intRoot = ((Integer)it.next()).intValue();
+		ret = balanced ? makeDtreeRec( intRoot ) : makeDtreeRecUnbalanced( intRoot );
+	}
+	else return "";
+
+	String dtreerec;
+	while( it.hasNext() )
+	{
+		intRoot = ((Integer)it.next()).intValue();
+		dtreerec = balanced ? makeDtreeRec( intRoot ) : makeDtreeRecUnbalanced( intRoot );
+		ret = STR_PAREN_LEFT + ret + STR_DELIMITER + dtreerec + STR_PAREN_RIGHT;
+	}
+	
+	return ret;
+}
+
+JAVACODE
+String makeDtreeRec( int root )
+{
+	if( FLAG_DEBUG ) BeliefNetworks.STREAM_VERBOSE.println( "makeDtreeRec( #"+root+" )" );
+	
+	List families = myAssignments[root];
+	String right = makeFamiliesSubtreeRec( families, (int)0, families.size()-1 );
+	
+	String left = expandChildrenRec( root, (int)0, myChildCounts[root] );
+	
+	if( right == null && left == null ) return "";
+	else if( right == null ) return left;
+	else if( left == null ) return right;
+	else return STR_PAREN_LEFT + left + STR_DELIMITER + right + STR_PAREN_RIGHT;
+}
+
+JAVACODE
+String expandChildrenRec( int root, int index1, int numchildren )
+{
+	//int currentid = callID++;
+	if( FLAG_DEBUG ) BeliefNetworks.STREAM_VERBOSE.println( "expandChildrenRec( #"+root+", "+index1+", "+numchildren+" ) " );
+	
+	if( numchildren == 0 ) return null;
+	if( numchildren == 1 )
+	{
+		boolean[] row = myJoinForest[root];
+		while( !row[index1] ) ++index1;
+		if( FLAG_DEBUG ) BeliefNetworks.STREAM_VERBOSE.println( "\t#" + root + " -> #" + index1 );
+		String ret = makeDtreeRec( index1 );
+		myCurrentRowIndex = index1+1;
+		return ret;
+	}
+	else
+	{
+		int leftchildren = numchildren >> 1;
+		int rightchildren = numchildren - leftchildren;
+		if( FLAG_DEBUG ) BeliefNetworks.STREAM_VERBOSE.println( "\t#" + root + " left |" + leftchildren + "| from " + index1 );
+		String left = expandChildrenRec( root, index1, leftchildren );
+		if( FLAG_DEBUG ) BeliefNetworks.STREAM_VERBOSE.println( "\t#" + root + " rght |" + rightchildren + "| from " + myCurrentRowIndex );
+		String right = expandChildrenRec( root, myCurrentRowIndex, rightchildren );
+		//myCurrentRowIndex = 0;
+		return STR_PAREN_LEFT + left + STR_DELIMITER + right + STR_PAREN_RIGHT;
+	}
+}
+
+JAVACODE
+String makeFamiliesSubtreeRec( List list, int index1, int index2 )
+{
+	//System.out.println( "makeFamiliesSubtreeRec( "+ list+", "+ index1+", "+ index2+" )" );
+	
+	int difference = index2 - index1;
+	
+	if( difference == 0 )
+	{
+		return (String) list.get( index1 );
+	}
+	else if( difference == 1 )
+	{
+		return STR_PAREN_LEFT + (String) list.get( index1 ) + STR_DELIMITER + (String) list.get( index2 ) + STR_PAREN_RIGHT;
+	}
+	else if( difference > 1 )
+	{
+		int indexinter = index1 + ( difference >> 1 );
+		return STR_PAREN_LEFT + makeFamiliesSubtreeRec( list, index1, indexinter ) + STR_DELIMITER + makeFamiliesSubtreeRec( list, indexinter+1, index2 ) + STR_PAREN_RIGHT;
+	}
+	else return null;
+}
+
+JAVACODE
+String makeDtreeRecUnbalanced( int root )
+{
+	String ret = makeFamiliesSubtreeUnbalanced( myAssignments[root] );
+	
+	boolean[] row = myJoinForest[root];
+	
+	String recDtree;
+	for( int i=0; i<row.length; i++ )
+	{
+		if( row[i] )
+		{
+			recDtree = makeDtreeRecUnbalanced( i );
+			if( ret == null ) ret = recDtree;
+			else ret = STR_PAREN_LEFT + ret + STR_DELIMITER + recDtree + STR_PAREN_RIGHT;
+		}
+	}
+	
+	return ret;
+}
+
+JAVACODE
+String makeFamiliesSubtreeUnbalanced( List list )
+{
+	String ret = null;
+	
+	Iterator it = list.iterator();
+	if( it.hasNext() ) ret = it.next().toString();
+	while( it.hasNext() ) ret = STR_PAREN_LEFT + ret + STR_DELIMITER + it.next().toString() + STR_PAREN_RIGHT;
+	
+	return ret;
+}
+
+/**
+	@author Keith Cascio
+	@since 121302
+*/
+void parse() :
+{
+	int numcliques;
+}
+{
+	dateBlock()
+	(moralBlock())?
+	(triangulateBlock())?
+	(myEliminationOrder = eliminationBlock())?
+	numcliques=cliquesBlock()
+	forestBlock( numcliques )
+	myAssignments=assignmentsBlock( numcliques )
+	
+	{
+	}
+}
+
+int dateBlock() :
+{
+}
+{
+	<ID> <ID> <NUM> <NUM> ":" <NUM> ":" <NUM> <NUM>
+	{
+		return (int)0;
+	}
+}
+
+int moralBlock() :
+{
+}
+{
+	<MORAL_LIT1>
+	( <MORAL_LIT2> <ID> <AND_LIT> <ID> )+
+	{
+		return (int)0;
+	}
+}
+
+int triangulateBlock() :
+{
+}
+{
+	(
+		<TRIAGULATE_LIT1> <NUM> <TRIAGULATE_LIT2>
+		idList()
+		(
+			(<TRIAGULATE_LIT3> <NUM>)
+			|
+			(
+				<TRIANGULATE_LIT5>
+				(
+					<TRIANGULATE_LIT6> <ID>
+					|
+					<TRIANGULATE_LIT7> <ID> <AND_LIT> <ID>
+				)*
+				<TRIANGULATE_LIT8> <NUM>
+			)
+		)
+	)+
+	( <TRIAGULATE_LIT4> <NUM> )?
+	{
+		return (int)0;
+	}
+}
+
+List idList() :
+{
+	Token t;
+	List ret = new LinkedList();
+}
+{
+	t=<ID> { ret.add( t.image ); } ( "," t=<ID> { ret.add( t.image ); } )* 
+	{
+		return ret;
+	}
+}
+
+List eliminationBlock() :
+{
+	Token t;
+	List ret = new LinkedList();
+}
+{
+	<ELIMINATION_LIT>
+	(
+	t=<ID>
+	{
+		ret.add( t.image );
+	}
+	)+
+	{
+		return ret;
+	}
+}
+
+int cliquesBlock() :
+{
+	Token tokenID;
+	Token tokenTableSize;
+	int max = (int)0;
+	int id = (int)0;
+	int tableSize = (int)0;
+	List members = null;
+	Token tcts;
+	myCliques = new LinkedList();
+}
+{
+	<CLIQUES_LIT1>
+	(
+		<CLIQUE_DECL_LIT1> tokenID=<NUM> "," <NUM> <CLIQUE_DECL_LIT2> members=idList() <CLIQUE_DECL_LIT3> tokenTableSize=<NUM>
+		{
+			id = Integer.parseInt( tokenID.image );
+			max = Math.max( max, id );
+			tableSize = Integer.parseInt( tokenTableSize.image );
+			myCliques.add( new HuginClique( id, members, tableSize ) );
+		}
+	)+
+	<CLIQUES_LIT2> tcts=<NUM>
+	{
+		//System.out.println( "\tokenID cliquesBlock() == " + max );
+		myTotalCliqueTableSize = Long.parseLong( tcts.image );
+		return max;
+	}
+}
+
+void forestBlock( int numcliques ) :
+{
+	Token t;
+	myRoots = new LinkedList();
+	int arraydim = numcliques+1;
+	myJoinForest = new boolean[arraydim][arraydim];
+	myChildCounts = new int[arraydim];
+	Arrays.fill( myChildCounts, (int)0 );
+	Token tokenParent;
+	Token tokenChild;
+	Token tokenSepTableSize;
+	int parentnum;
+	int childnum;
+}
+{
+	<JUNCTION_FOREST_LIT>
+	(
+		<JUNCTION_TREE_DECL_LIT1> t=<NUM> <JUNCTION_TREE_DECL_LIT2>
+		{
+			myRoots.add( new Integer( t.image ) );
+		}
+		(
+			<LINK_DECL_LIT1> tokenChild=<NUM> <AND_LIT> tokenParent=<NUM> <LINK_DECL_LIT2> idList() <LINK_DECL_LIT3> tokenSepTableSize=<NUM> ")"
+			{
+				childnum = Integer.parseInt( tokenChild.image );
+				parentnum = Integer.parseInt( tokenParent.image );
+				myJoinForest[parentnum][childnum] = true;
+				++myChildCounts[parentnum];
+				
+				myTotalSeparatorTableSize += Long.parseLong( tokenSepTableSize.image );
+			}
+		)*
+	)*
+	{
+		//System.out.println( "\t forestBlock()" );
+	}
+}
+
+List[] assignmentsBlock( int numcliques ) :
+{
+	List[] ret = new List[numcliques+1];
+	for( int i=1; i<ret.length; i++ ) ret[i] = new LinkedList();
+	
+	Token tokenID;
+	Token tokenCliqueNum;
+	int cliqueNum;
+}
+{
+	<ASSIGNMENTS_LIT>
+	(
+		<ASSIGNMENTS_DECL_LIT1> tokenID=<ID> <ASSIGNMENTS_DECL_LIT2> tokenCliqueNum=<NUM>
+		{
+			cliqueNum = Integer.parseInt( tokenCliqueNum.image );
+			ret[cliqueNum].add( tokenID.image );
+		}
+	)+
+	{
+		//System.out.println( "\t assignmentsBlock()" );
+		return ret;
+	}
+}

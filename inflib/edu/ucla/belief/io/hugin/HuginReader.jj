@@ -1,0 +1,491 @@
+PARSER_BEGIN(HuginReader)
+package edu.ucla.belief.io.hugin;
+
+import edu.ucla.belief.io.dsl.DSLConstants;
+import edu.ucla.belief.*;
+import edu.ucla.belief.io.*;
+//import edu.ucla.util.JVMTI;
+import edu.ucla.util.ProgressMonitorable;
+
+import java.util.*;
+import java.io.*;
+
+/** @author James Park
+    @author keith cascio
+    @since 20020226
+    @since 20060518 */
+public class HuginReader implements ProgressMonitorable
+{
+	public static final String STR_MAP_TOKEN = "__Map__";
+	
+	/** @since 20060804 */
+	public void setRelaxed( boolean flag ){
+		this.myFlagRelaxed = flag;
+	}
+	
+	public void setEstimator( SkimmerEstimator huginworkestimator ){
+		myEstimator = huginworkestimator;
+		if( myEstimator != null ){
+			myProgressMax = myEstimator.getProgressMax();
+		}
+	}
+	
+	public void setConstructionTask( NodeLinearTask task ){
+		myConstructionTask = task;
+	}
+	
+	public BeliefNetwork beliefNetwork() throws ParseException {
+		BeliefNetwork ret = null;
+		try{
+			ret = HuginReader.this.doBeliefNetwork();
+		}finally{
+			myFlagFinished = true;
+		}
+		return ret;
+	}
+	
+	/** interface ProgressMonitorable
+		@since 20060518 */
+	public int getProgress(){
+		return myProgress;
+	}
+	
+	/** interface ProgressMonitorable
+		@since 20060518 */
+	public int getProgressMax(){
+		return myProgressMax;
+	}
+	
+	/** interface ProgressMonitorable
+		@since 20060519 */
+	public boolean isFinished(){
+		return myFlagFinished;
+	}
+	
+	/** interface ProgressMonitorable
+		@since 20060519 */
+	public String getNote(){
+		return "reading file...";
+	}
+	
+	/** interface ProgressMonitorable
+		@since 20060519 */
+	public ProgressMonitorable[] decompose(){
+		if( myDecomp == null ) myDecomp = new ProgressMonitorable[] { HuginReader.this };
+		return myDecomp;
+	}
+	
+	/** interface ProgressMonitorable
+		@since 20060519 */
+	public String getDescription(){
+		return "HuginReader";
+	}
+	
+    public static void main(String args[])
+    {
+		try
+		{
+			BeliefNetworks.STREAM_TEST.println("Starting");
+			for(int i=0;i<args.length;i++)
+			{
+		    	BeliefNetworks.STREAM_TEST.println(args[i]);
+				HuginReader reader=new HuginReader(new java.io.FileReader(new File(args[0])));
+				//HuginNet obj=reader.huginNet();
+				//obj.makeNetwork();
+				BeliefNetworks.STREAM_TEST.println("success");
+			}
+		} catch(Exception e)
+		{
+			System.err.println(e);
+			e.printStackTrace();
+		}
+	}
+	
+	//private long elapsedNodeBlock      = 0;
+	//private long elapsedPotentialBlock = 0;
+	
+	private SkimmerEstimator myEstimator;
+	private int     myProgress     = 0;
+	private int     myProgressMax  = 1;
+	private boolean myFlagFinished = false;
+	private ProgressMonitorable[] myDecomp;
+	private NodeLinearTask myConstructionTask;
+	private boolean myFlagRelaxed = false;
+}
+
+PARSER_END(HuginReader)
+
+SKIP :
+{
+" "
+| "\t"
+| "\n"
+| "\r"
+}
+
+SPECIAL_TOKEN :
+{
+	<COMMENT: "%" (~["\n","\r"])* ("\n" | "\r" | "\r\n")> : DEFAULT
+}
+
+
+TOKEN :
+{
+<CONTINUOUS: "continuous"> |
+<DISCRETE:"discrete"> |
+<NODE: "node"> |
+<DECISION: "decision"> |
+<UTILITY: "utility"> |
+<POTENTIAL: "potential"> |
+<NET: "net"> |
+<CLASS: "class"> |
+<MAP_LIT: "__Map__" > |
+
+// N.B. the order of the RE tokens seems to make a difference
+// i.e. no definitions after <STRING>
+
+<NUM: ("NaN") | (("-")? ((["0"-"9"])+ | ((["0"-"9"])* "." (["0"-"9"])+)) (("E" | "e")("-")? (["0"-"9"])+)?)   > |
+<VALSTRING: "\"" ( ~["\n","\r","\\","\""] | ("\\" ~["\n","\r"]) )* "\""> |
+//Keith Cascio 031902 - added '.' to the set of acceptable ID characters
+<ID: ["a"-"z","A"-"Z","_"] (["a"-"z","A"-"Z","_","0"-"9", "."] )*> |
+
+//Keith Cascio 031902 - strings with escape characters
+<STRING: "\"" (~["\n","\r","\\","\""] | "\\n" | "\\r" | "\\t" | "\\b" | "\\f" | "\\\\" | "\\\"" | ("\\" ([" ","\t","\r","\n"])* ["\n","\r"]))* "\"">
+//<STRING: "\"" (~["\n","\r","\\","\""] | ("\\" ~["\n","\r"]))* "\"">
+}
+
+
+BeliefNetwork doBeliefNetwork() :
+{
+	//long start = JVMTI.getCurrentThreadCpuTimeUnsafe();
+	
+	//HuginNet net=new HuginNetImpl();
+	HuginNode node = null;
+	HuginPotential potential = null;
+	Map nodeNamesToFiniteVariables = new HashMap();
+	Map finiteVariablesToPotentials = new HashMap();
+	Collection potentials = new LinkedList();
+	Map netParams = null;
+	Variable fVar = null;
+	String tempName = null;
+	HuginFileVersion hfv = HuginFileVersion.V57;
+	
+	int incNodeBlock = 0;
+	int incPoteBlock = 0;
+	if( myEstimator != null ){
+		myProgressMax = myEstimator.getProgressMax();
+		incNodeBlock  = myEstimator.getProgressIncrementNodeBlock();
+		incPoteBlock  = myEstimator.getProgressIncrementPoteBlock();
+	}
+}
+{
+	(
+		node=nodeBlock()
+		{
+			if( Thread.currentThread().isInterrupted() ) return (BeliefNetwork)null;
+			//net.add(node);
+			//fVar = node.makeVariable();
+			//fVar.userobject = node;
+			nodeNamesToFiniteVariables.put( node.getID(), node );
+			//net.add( node );
+			myProgress += incNodeBlock;
+		}
+		|
+		potential=potentialBlock()
+		{
+			if( Thread.currentThread().isInterrupted() ) return (BeliefNetwork)null;
+			//net.add(potential);
+			potentials.add( potential );
+			myProgress += incPoteBlock;
+		}
+		|
+		netParams=netBlock()
+		{
+			hfv = HuginFileVersion.V57;
+			//net.setParams(netParams);
+			HuginReader.this.digest( netParams );
+		}
+		|
+		netParams=classBlock( nodeNamesToFiniteVariables, potentials )
+		{
+			hfv = HuginFileVersion.V61;
+			HuginReader.this.digest( netParams );
+		}
+	)*
+	{
+		//long mid0 = JVMTI.getCurrentThreadCpuTimeUnsafe();
+		
+		for( Iterator it = potentials.iterator(); it.hasNext(); )
+		{
+			potential = (HuginPotential) it.next();
+			tempName = potential.joints.get(0).toString();
+			fVar = (Variable)nodeNamesToFiniteVariables.get( tempName );
+			finiteVariablesToPotentials.put( fVar, new TableShell( (Table) potential.makePotential(nodeNamesToFiniteVariables) ) );
+		}
+		
+		//long mid1 = JVMTI.getCurrentThreadCpuTimeUnsafe();
+		
+		HuginNetImpl ret = new HuginNetImpl( false );
+		ret.induceGraph( finiteVariablesToPotentials, myConstructionTask );
+		if( Thread.currentThread().isInterrupted() ) return (BeliefNetwork)null;
+		ret.setVersion( hfv );
+		if( netParams != null ) ret.setParams( netParams );
+		
+		//long end = JVMTI.getCurrentThreadCpuTimeUnsafe();
+		
+		//long first = mid0 - start;
+		//long second = mid1 - mid0;
+		//long last  = end - mid1;
+		//double total = (double) (end - start);
+		
+		//double estimFrac = ((double)myEstimator.getCost()) / total;
+		//double firstFrac = ((double)first) / total;
+		//double nodeFrac  = ((double)elapsedNodeBlock) / total;
+		//double poteFrac  = ((double)elapsedPotentialBlock) / total;
+		//double secondFrac = ((double)second) / total;
+		//double lastFrac = ((double)last) / total;
+
+		//System.out.println( "HuginReader.beliefNetwork()" );
+		//System.out.println( "    estimation      : " + NetworkIO.FORMAT_PROFILE_PERCENT.format(estimFrac) + " (" + NetworkIO.formatTime(myEstimator.getCost())
+		//              + "),\n    parsing         : " + NetworkIO.FORMAT_PROFILE_PERCENT.format(firstFrac) + " (" + NetworkIO.formatTime(first)
+		//              + "),\n        nodes       : " + NetworkIO.FORMAT_PROFILE_PERCENT.format(nodeFrac) + " (" + NetworkIO.formatTime(elapsedNodeBlock)
+		//              + "),\n        potentials  : " + NetworkIO.FORMAT_PROFILE_PERCENT.format(poteFrac) + " (" + NetworkIO.formatTime(elapsedPotentialBlock)
+		//              + "),\n    make potentials : " + NetworkIO.FORMAT_PROFILE_PERCENT.format(secondFrac) + " (" + NetworkIO.formatTime(second)
+		//              + "),\n    new HuginNetImpl: " + NetworkIO.FORMAT_PROFILE_PERCENT.format(lastFrac) + " (" + NetworkIO.formatTime(last) + ")" );
+		              
+		myFlagFinished = true;
+		return ret;
+	}
+}
+
+Map netBlock() :
+{
+	Map values;
+}
+{
+	<NET> "{" values=valueList() "}"
+	{
+		return values;
+	}
+}
+
+Map classBlock( Map nodeNamesToFiniteVariables, Collection potentials ) :
+{
+	HuginNode node = null;
+	HuginPotential potential = null;
+	Map result = new HashMap();
+	Token key;
+	Object value;
+	LinkedList mapPrefixes = new LinkedList();
+}
+{
+	<CLASS> <ID> "{"
+	(
+		node=nodeBlock()
+		{
+			nodeNamesToFiniteVariables.put( node.getID(), node );
+		}
+		|
+		potential=potentialBlock()
+		{
+			potentials.add( potential );
+		}
+		|
+		key=<ID> "=" value=value( key.image.startsWith( PropertySuperintendent.KEY_HUGIN_POSITION ) || (key.image.startsWith( DSLConstants.STR_KEY_PREFIX ) && !key.image.startsWith( DSLConstants.KEY_OBSERVATION_COST_NODECOSTSLIST ) ) ) ";"
+		{
+			if( value == STR_MAP_TOKEN )//it's a Map
+			{
+				Map newMap = new HashMap();
+				mapPrefixes.add( key.image );
+				result.put( key.image, newMap );
+			}
+			else
+			{
+				Map destination = result;
+				String destinationKey = key.image;
+
+				if( !mapPrefixes.isEmpty() )
+				{
+					for( Iterator it= mapPrefixes.iterator(); it.hasNext(); )
+					{
+						String currentPrefix = (String) it.next();
+						if( key.image.startsWith( currentPrefix ) )
+						{
+							destination = (Map) result.get( currentPrefix );
+							destinationKey = key.image.substring( currentPrefix.length() );
+						}
+					}
+				}
+				
+				if( PropertySuperintendent.KEY_HUGINITY.equals( destinationKey ) && PropertySuperintendent.VALUE_PERMISSIVE.equals( value ) ){
+					HuginReader.this.setRelaxed( true );
+				}
+
+				destination.put( destinationKey,value );
+			}
+		}
+	)*
+	{
+	}
+	"}"
+	{
+		return result;
+	}
+}
+
+HuginPotential potentialBlock() :
+{
+	//long start = JVMTI.getCurrentThreadCpuTimeUnsafe();
+	Token var;
+	List joints=new ArrayList();
+	List conditioned=new ArrayList();
+	Map values;
+}
+{
+	//from the hugin example files, things like potential (A,B|) are legal.
+	<POTENTIAL> "(" joints=idList() 
+	("|" (conditioned=idList())?)? ")" "{" values=valueList() "}"
+	{
+		HuginPotential ret = new HuginPotential( joints, conditioned, values, myFlagRelaxed );
+		//long end = JVMTI.getCurrentThreadCpuTimeUnsafe();
+		//elapsedPotentialBlock += (end - start);
+		return ret;
+	} 
+}
+
+List idList() :
+{
+	Token t;
+	List result=new ArrayList();
+}
+{
+	(t=<ID>{result.add(t.image);})+
+	{
+		return result;
+	}
+}
+
+HuginNode nodeBlock() :
+{
+	//long start = JVMTI.getCurrentThreadCpuTimeUnsafe();
+	Token vartype=null;
+	Token nodetype=null;
+	Token name;
+	Map values;	
+}
+{
+	(vartype=<CONTINUOUS> | vartype=<DISCRETE>)? 
+	(nodetype=<NODE>|nodetype=<DECISION>|nodetype=<UTILITY>) 
+	name=<ID> "{" values=valueList() "}"
+	{
+		int vt;
+		if(vartype==null){
+			vt=DISCRETE;
+		}else{
+			vt=vartype.kind;
+		}
+		HuginNode ret = new HuginNodeImpl( name.image, values, nodetype.kind, vt );
+		//long end = JVMTI.getCurrentThreadCpuTimeUnsafe();
+		
+		//elapsedNodeBlock += (end - start);
+		return ret;
+	}
+}
+
+Map valueList() :
+{
+	Map result=new HashMap();
+	Token key;
+	Object value;
+	LinkedList mapPrefixes = new LinkedList();
+}
+{
+	(
+	key=<ID> "=" value=value( key.image.startsWith( PropertySuperintendent.KEY_HUGIN_POSITION ) || (key.image.startsWith( DSLConstants.STR_KEY_PREFIX ) && !key.image.startsWith( DSLConstants.KEY_OBSERVATION_COST_NODECOSTSLIST ) ) ) ";"
+	{
+		if( value == STR_MAP_TOKEN )//it's a Map
+		{
+			Map newMap = new HashMap();
+			mapPrefixes.add( key.image );
+			result.put( key.image, newMap );
+		}
+		else
+		{
+			Map destination = result;
+			String destinationKey = key.image;
+			
+			if( !mapPrefixes.isEmpty() )
+			{
+				for( Iterator it= mapPrefixes.iterator();
+					it.hasNext(); )
+				{
+					String currentPrefix = (String) it.next();
+					if( key.image.startsWith( currentPrefix ) )
+					{
+						destination = (Map) result.get( currentPrefix );
+						destinationKey = key.image.substring( currentPrefix.length() );
+					}
+				}
+			}
+			
+			destination.put( destinationKey,value );
+		}
+	}
+	)*
+	{
+		return result;
+	}
+}
+
+Object value( boolean asInteger ) :
+{
+  Token x;
+  List newList;
+  Object val;
+}
+{
+  (
+  (x=<MAP_LIT>    { return STR_MAP_TOKEN;/* let valueList() know about a new Map */ })
+  |
+  (x=<VALSTRING>  { return stripQuotes( x.image ); })
+  |
+  (x=<NUM>        { return asInteger ? ((Number) new Integer( x.image )) : ((Number) new Double( x.image )); })
+  | LOOKAHEAD(2)
+  (x=<ID>         { return x.image; })
+  |
+  (val=function() { return val;})
+  |
+  ( ("(" { newList=new ArrayList(); }) (val=value( asInteger ) { newList.add(val); })* ")" )
+                  { return newList; }
+  )
+}
+
+JAVACODE
+String stripQuotes(String str)
+{
+	return str.substring(1,str.length()-1);
+}
+
+JAVACODE
+private void digest( Map netParams ){
+	try{
+		if( netParams == null ) return;
+		if( netParams.containsKey( PropertySuperintendent.KEY_HUGINITY ) && (PropertySuperintendent.VALUE_PERMISSIVE.equals( netParams.get( PropertySuperintendent.KEY_HUGINITY ) ) ) ) HuginReader.this.setRelaxed( true );
+	}catch( Exception exception ){
+		System.err.println( "warning! HuginReader.digest() caught " + exception );
+	}
+}
+
+HuginFunction function() :
+{
+	Token name;
+	List values=new ArrayList();
+	Object val;
+}
+{
+	// <ID> "(" value() ("," value())* ")"
+	name=<ID> "(" val=value( false ){values.add(val);}("," val=value( false ){values.add(val);})*   ")"
+	{
+		return new HuginFunction(name.image,values);
+	}
+}

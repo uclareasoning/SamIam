@@ -1,0 +1,13 @@
+.cvsignore
+backup
+*.bash
+*.onhold
+hugindouble
+huginsingle
+hugindouble.exe
+huginsingle.exe
+*.ps
+*.txt
+*.zip
+*.zipp
+*.dll

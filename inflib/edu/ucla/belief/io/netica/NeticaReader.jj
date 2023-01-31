@@ -1,0 +1,167 @@
+//Keith Cascio
+//2/26/2002
+//port of NeticaReader.jj by James Park for metamata
+//to JavaCC
+
+PARSER_BEGIN(NeticaReader)
+package edu.ucla.belief.io.netica;
+
+import java.util.*;
+import java.io.*;
+import edu.ucla.belief.BeliefNetworks;
+import edu.ucla.belief.io.*;
+
+public class NeticaReader
+{
+    public static void main(String[] args){
+            try{
+        for(int i=0;i<args.length;i++){
+                BeliefNetworks.STREAM_TEST.println("Starting: "+args[i]);
+                NeticaReader reader=new NeticaReader(new java.io.FileReader(new File(args[i])));
+                Object obj=reader.neticaFile();
+                BeliefNetworks.STREAM_TEST.println("success:"+args[i]);
+            }
+            }catch(Exception e){
+                e.printStackTrace(System.out);
+        }
+        BeliefNetworks.STREAM_TEST.println("finished");
+    }
+}
+
+PARSER_END(NeticaReader)
+
+SKIP :
+{
+" "
+| "\t"
+| "\n"
+| "\r"
+}
+
+SPECIAL_TOKEN :
+{
+	<COMMENT: ("//" (~["\n","\r"])* ("\n" | "\r" | "\r\n"))|( "/*" (~["*"] |(["*"]~["/"]))* "*/")>:DEFAULT
+}
+
+TOKEN :
+{
+	<UNDEF: "@undef">|
+	<DEFINE: "define">|
+	<ID: ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","_","0"-"9"] )*> |
+	<NUM: (("+"|"-")? ((["0"-"9"])+ | ((["0"-"9"])* "." (["0"-"9"])+)) (("E" | "e")("-"|"+")? (["0"-"9"])+)?)| (("-")? "INFINITY")   > |
+	<STRING: "\"" (~["\\","\""] | ("\\" ~["j"]))* "\""> 
+}
+
+JAVACODE
+List read() throws IOException
+{
+	try{
+		return neticaFile();
+	}catch(ParseException pe){
+		pe.printStackTrace();
+		throw new IOException(pe.getMessage());
+	}
+}
+
+List neticaFile() :
+{
+	List net=new ArrayList();
+	Object obj;
+}
+{
+	(obj=neticaObject() ";"{net.add(obj);})*
+	{
+		for(int i=0;i<net.size();i++){
+			((NeticaObject)net.get(i)).initializeInheritance(new HashMap());
+		}
+		return net;
+	}
+}
+
+NeticaObject neticaObject() :
+{
+	NeticaObject result=new NeticaObject();
+	Token type=null; 
+	Token name=null;
+	List supers=null;
+}
+{
+	(type=<ID> (name=<ID> | name=<NUM>)? {
+			result.setType(type.image);
+			if(name==null){
+				result.setName("");
+			}else{
+				result.setName(name.image);
+			}
+		}
+	)
+	(supers=list(){
+		result.setSupers(supers);
+	})?
+	("{" (statement(result) ";")* "}")
+	{
+		return result;
+	}
+}
+
+void statement(NeticaObject parent) :
+{
+	NeticaObject obj=null;
+	Token name=null;
+	Object val=null;
+}
+{
+	(
+	LOOKAHEAD(2)
+	(name=<ID> "=" val=value(){
+		parent.addEntry(name.image,val);
+	})
+	|(<DEFINE> obj=neticaObject(){
+		parent.addDefinition(obj);
+	})
+	|(obj=neticaObject(){
+		parent.addChild(obj);
+	}))
+}
+
+Object value() :
+{
+	Token tok=null;
+	Object obj=null;
+}
+{
+	(
+	LOOKAHEAD(2)
+	(obj=neticaObject(){
+		return obj;
+	})
+	|((tok=<ID> | tok=<STRING>|tok=<UNDEF>){
+		return tok.image;
+	})
+	|(tok=<NUM>{
+		if(tok.image.equals("-INFINITY")){
+			return new Double(Double.NEGATIVE_INFINITY);
+		}else if(tok.image.equals("INFINITY")){
+			return new Double(Double.POSITIVE_INFINITY);
+		}
+		return new Double(tok.image);
+	})
+	|(obj=list(){
+		return obj;
+	}))
+	{
+		return null;
+	}
+}
+
+List list() :
+{
+	List list=new ArrayList();
+	Object val=null;
+}
+{
+	"(" ((val=value(){list.add(val);}) ("," val=value(){list.add(val);})*)?")" 
+	{
+		return list;
+	}
+}

@@ -1,0 +1,170 @@
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+     Schema for BayesNet Interchange Format (BIF) version 0.3
+     described http://www.cs.cmu.edu/~fgcozman/Research/InterchangeFormat
+     updated 20060531 for version 0.3a proposed by Jeff Bilmes bilmes@cuba.ee.washington.edu 20060529
+     author keith cascio, since 20060525
+     Copyright 2006 UCLA Automated Reasoning Group. All rights reserved.
+    </xsd:documentation>
+  </xsd:annotation>
+
+  <xsd:element name="BIF" type="bifRoot"/>
+  
+  <xsd:element name="XBIF" type="bifRoot"/>
+  
+  <xsd:element name="NETWORK" type="bifNetwork"/>
+  
+  <xsd:element name="NAME" type="xsd:string"/>
+  
+  <xsd:element name="PROPERTY" type="xsd:string"/>
+  
+  <xsd:element name="VARIABLE" type="bifVariable"/>
+  
+  <xsd:element name="OUTCOME" type="xsd:string"/>
+  
+  <xsd:element name="VALUES" type="xsd:positiveInteger"/>
+  
+  <xsd:element name="OBSERVED" type="xsd:nonNegativeInteger"/>
+  
+  <xsd:element name="DEFINITION" type="bifDefinition"/>
+  
+  <xsd:element name="PROBABILITY" type="bifDefinition"/>
+  
+  <xsd:simpleType name="bifVersion">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="0.3"  />
+      <xsd:enumeration value="0.3a" />
+    </xsd:restriction>
+  </xsd:simpleType>
+  
+  <xsd:complexType name="bifRoot">
+    <xsd:sequence>
+      <xsd:element ref="NETWORK"/>
+    </xsd:sequence>
+    <xsd:attribute name="VERSION" type="bifVersion" use="required" />
+  </xsd:complexType>
+  
+  <xsd:complexType name="bifNetwork">
+    <xsd:sequence>
+      <xsd:element ref="NAME" minOccurs="0" />
+      <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element ref="PROPERTY"   />
+        <xsd:element ref="VARIABLE"   />
+        <xsd:element ref="DEFINITION" />
+        <xsd:element ref="PROBABILITY"/>
+      </xsd:choice>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:simpleType name="bifVariableType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="nature"  />
+      <xsd:enumeration value="discrete"/>
+      <xsd:enumeration value="decision"/>
+      <xsd:enumeration value="utility" />
+    </xsd:restriction>
+  </xsd:simpleType>
+  
+  <xsd:complexType name="bifVariable">
+    <xsd:sequence>
+      <xsd:element ref="NAME"     minOccurs="1" />
+      <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element ref="OUTCOME"  />
+        <xsd:element ref="PROPERTY" />
+        <xsd:element ref="VALUES"   />
+        <xsd:element ref="OBSERVED" />
+      </xsd:choice>
+    </xsd:sequence>
+    <xsd:attribute name="TYPE" type="bifVariableType" use="optional" default="nature" />
+  </xsd:complexType>
+  
+  <xsd:simpleType name="bifProbability">
+    <xsd:restriction base="xsd:double">
+      <xsd:minInclusive value="0"/>
+      <xsd:maxInclusive value="1"/>
+    </xsd:restriction>
+  </xsd:simpleType>
+  
+  <xsd:simpleType name="bifProbabilityData">
+    <xsd:list itemType="bifProbability"/>
+  </xsd:simpleType>
+  
+  <xsd:complexType name="bifDefinition">
+    <xsd:sequence>
+      <xsd:element   name="FOR"      minOccurs="1" maxOccurs="unbounded" type="xsd:string"         />
+      <xsd:choice                    minOccurs="0" maxOccurs="unbounded" >
+        <xsd:element name="TABLE"    minOccurs="1"                       type="bifProbabilityData" />
+        <xsd:element name="GIVEN"    minOccurs="0"                       type="xsd:string"         />
+        <xsd:element ref ="PROPERTY" minOccurs="0" maxOccurs="unbounded"                           />
+      </xsd:choice>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:element name="bif" type="bifRootLower"/>
+  
+  <xsd:element name="xbif" type="bifRootLower"/>
+  
+  <xsd:element name="network" type="bifNetworkLower"/>
+  
+  <xsd:element name="name" type="xsd:string"/>
+  
+  <xsd:element name="property" type="xsd:string"/>
+  
+  <xsd:element name="variable" type="bifVariableLower"/>
+  
+  <xsd:element name="outcome" type="xsd:string"/>
+  
+  <xsd:element name="values" type="xsd:positiveInteger"/>
+  
+  <xsd:element name="observed" type="xsd:nonNegativeInteger"/>
+  
+  <xsd:element name="definition" type="bifDefinitionLower"/>
+  
+  <xsd:element name="probability" type="bifDefinitionLower"/>
+  
+  <xsd:complexType name="bifRootLower">
+    <xsd:sequence>
+      <xsd:element ref="network"/>
+    </xsd:sequence>
+    <xsd:attribute name="version" type="bifVersion" use="required" />
+  </xsd:complexType>
+  
+  <xsd:complexType name="bifNetworkLower">
+    <xsd:sequence>
+      <xsd:element ref="name" minOccurs="0" />
+      <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element ref="property"   />
+        <xsd:element ref="variable"   />
+        <xsd:element ref="definition" />
+        <xsd:element ref="probability"/>
+      </xsd:choice>
+    </xsd:sequence>
+  </xsd:complexType>
+  
+  <xsd:complexType name="bifVariableLower">
+    <xsd:sequence>
+      <xsd:element ref="name"     minOccurs="1" />
+      <xsd:choice minOccurs="0" maxOccurs="unbounded">
+        <xsd:element ref="outcome"  />
+        <xsd:element ref="property" />
+        <xsd:element ref="values"   />
+        <xsd:element ref="observed" />
+      </xsd:choice>
+    </xsd:sequence>
+    <xsd:attribute name="type" type="bifVariableType" use="optional" default="nature" />
+  </xsd:complexType>
+  
+  <xsd:complexType name="bifDefinitionLower">
+    <xsd:sequence>
+      <xsd:element   name="for"      minOccurs="1" maxOccurs="unbounded" type="xsd:string"         />
+      <xsd:choice                    minOccurs="0" maxOccurs="unbounded" >
+        <xsd:element name="table"    minOccurs="1"                       type="bifProbabilityData" />
+        <xsd:element name="given"    minOccurs="0"                       type="xsd:string"         />
+        <xsd:element ref ="property" minOccurs="0" maxOccurs="unbounded"                           />
+      </xsd:choice>
+    </xsd:sequence>
+  </xsd:complexType>
+
+</xsd:schema>

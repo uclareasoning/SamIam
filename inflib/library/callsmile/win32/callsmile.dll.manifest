@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-	<assemblyIdentity version="1.3.0.0" name="SMILE wrapper library" type="win32"/>
-	<description>UPitt SMILE wrapper JNI library for SamIam/inflib</description>
-</assembly>

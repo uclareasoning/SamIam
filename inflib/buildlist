@@ -1,9 +1,0 @@
-#!/bin/bash
-
-[ -x '/usr/local/bin/gnugrep'  ] && GREP='/usr/local/bin/gnugrep';
-[ -z "$GREP" -a -x '/bin/grep' ] && GREP='/bin/grep';
-
-export LC_ALL=C;
-export LC_COLLATE=C;
-
-find edu il2 -name CVS -prune -o -name "*.java" -print | $GREP -Ev 'rcform|uai2006|RC_Link_UAI2006|TestCompleteness|DataSetStatistic|XmlbifParser|XmlbifWriter|xmlbif.SkimmerEstimator|UAI06Parser' | sort > files.txt

@@ -1,6 +1,0 @@
-signature/FormattedSignature.java
-signature/MigrationTarget.java
-signature/SignatureDoclet.java
-signature/SignatureHelper.java
-signature/SignatureFormat.java
-signature/SignaturePreprocessor.java

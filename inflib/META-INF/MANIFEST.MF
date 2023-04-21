@@ -1,4 +1,0 @@
-Manifest-Version: 1.0
-Main-Class: edu.ucla.belief.io.DSLio.SMILEReader
-Implementation-Title: Inflib
-Implementation-Version: 3.0

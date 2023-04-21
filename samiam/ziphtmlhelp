@@ -1,6 +1,0 @@
-#!/bin/env bash
-# author: keith cascio, since: 20020905
-
-[ -f /usr/local/bin/gnutar ] && { TAR=/usr/local/bin/gnutar; } || { TAR=/bin/tar; }
-
-$TAR vczf samiamhtmlhelp.tar.gz -Thelpfiles.txt

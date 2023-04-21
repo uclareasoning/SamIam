@@ -1,0 +1,9 @@
+.gradle
+.idea/
+build
+*/build
+*/*/build
+/samiam-ui/samiamrc.xml
+*.net
+/samiamrc.xml
+*.patch

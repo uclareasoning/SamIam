@@ -5,5 +5,5 @@ build
 */*/build
 /samiam-ui/samiamrc.xml
 *.net
-/samiamrc.xml
+samiamrc.xml
 *.patch

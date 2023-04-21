@@ -20,7 +20,7 @@ import edu.ucla.belief.io.*;
 import edu.ucla.belief.io.dsl.*;
 import edu.ucla.belief.io.hugin.*;
 import il2.inf.map.MapSearch;
-import il2.inf.SDP.*;
+import il2.inf.sdp.SDP;
 import il2.model.BayesianNetwork;
 
 import java.awt.*;

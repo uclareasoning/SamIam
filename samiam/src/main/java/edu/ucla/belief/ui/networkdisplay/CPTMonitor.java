@@ -286,7 +286,7 @@ public class      CPTMonitor
 	private void runAWT(){
 		Runnable runnable = new Runnable(){
 			public void run(){
-				yield();
+//				yield();
 				boolean sh = CPTMonitor.this.component.isShowing();
 				if( sh ){ TOOLKIT   .addAWTEventListener( CPTMonitor.this, AWTEvent.MOUSE_EVENT_MASK ); }
 				else{      }
@@ -382,7 +382,7 @@ public class      CPTMonitor
 			if( src == slider ){
 				boolean     sbv_before = visible( scrollbar );
 				ported.setBreadth(      slider.getValue() );
-				yield();
+//				yield();
 				boolean     sbv_after  = visible( scrollbar );
 				if( sbv_after && (! sbv_before) && (! accomodated) ){
 					accomodated = true;

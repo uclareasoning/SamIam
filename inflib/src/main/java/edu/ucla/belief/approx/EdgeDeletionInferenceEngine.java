@@ -404,7 +404,7 @@ public class EdgeDeletionInferenceEngine extends AbstractInferenceEngine impleme
 		},
 		stepforward( true, "iterate", "proceed with one iteration", "StepForward16.gif", getKeyStroke( VK_RIGHT, 0 ) ){
 			protected Command exec( EdgeDeletionInferenceEngine ie ) throws Exception{
-				yield();
+//				yield();
 				synchronized( ie.synch ){
 					if( ie.bridge.edalgorithm.iterationStatusOk() ){
 						ie.residual = ie.bridge.edalgorithm.oneMoreIteration( false );
@@ -419,10 +419,10 @@ public class EdgeDeletionInferenceEngine extends AbstractInferenceEngine impleme
 		play( true, "finish", "iterate until we reach convergence, time out, or maximum iterations", "Play16.gif", getKeyStroke( VK_DOWN, 0 ) ){
 			protected Command exec( EdgeDeletionInferenceEngine ie ) throws Exception{
 				ie.playing = true;
-				yield();
+//				yield();
 				boolean iterated = false;
 				while( ie.bridge.edalgorithm.iterationStatusOk() ){
-					yield();
+//					yield();
 					if( interrupted() ){ break; }
 					synchronized( ie.synch ){
 						if( ie.bridge.edalgorithm.iterationStatusOk() ){
@@ -431,7 +431,7 @@ public class EdgeDeletionInferenceEngine extends AbstractInferenceEngine impleme
 							ie.notifyIterationListeners();
 						}
 					}
-					yield();
+//					yield();
 				}
 				ie.playing = false;
 				if( iterated ){ synchronized( ie.synch ){ ie.notifyEvidenceChangeListeners(); } }

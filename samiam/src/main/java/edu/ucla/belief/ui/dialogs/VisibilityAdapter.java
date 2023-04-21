@@ -970,12 +970,12 @@ private Merchant&lt;Constituent&gt; di = new Merchant&lt;Constituent&gt;( Consti
 		<li>return from run() and cease to exist
 		</ol> */
 	public void run(){
-		yield();
+//		yield();
 		try{
-			yield();
+//			yield();
 		  //if( flag_debug ) System.out.println( name + ".run()" );
 			long start = currentTimeMillis();
-			yield();
+//			yield();
 			while( currentTimeMillis() - start < 0x40 ){ try{ sleep( 0x40 ); }catch( InterruptedException ie ){} }
 
 			while( thread == currentThread() ){
@@ -984,7 +984,10 @@ private Merchant&lt;Constituent&gt; di = new Merchant&lt;Constituent&gt;( Consti
 					while(     dirty() ){ reaction(); }
 
 					if( thread == currentThread() ){ sleep( LONG_LINGER ); }
-				}catch( InterruptedException ie ){ yield(); continue; }
+				}catch( InterruptedException ie ){
+//					yield();
+					continue;
+				}
 
 				synchronized( synch_thread ){ if( ! (motivated() || dirty()) ){ thread = null; } }
 			}
@@ -1033,7 +1036,7 @@ private Merchant&lt;Constituent&gt; di = new Merchant&lt;Constituent&gt;( Consti
 
 		boolean show = count_visible <= half;
 
-		yield();//                                   These lines tend to help do the 'right thing'
+	//	yield();//                                   These lines tend to help do the 'right thing'
 		if(          interrupted() ) return this;//  when action messages happen in quick succession.
 
 		for( int i=0; i<targets.length; i++ ){ set( i, show ); }

@@ -2462,7 +2462,7 @@ java.lang.NullPointerException
 
 		/** @since 20071217 */
 		public void run(){
-			yield();
+	//		yield();
 			if(           mySynchDecimalField == null ){ return; }
 			synchronized( mySynchDecimalField ){
 				try{

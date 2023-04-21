@@ -50,15 +50,15 @@ public class Dropdown<E> extends JComboBox implements KeyListener//, ListSelecti
 
 		public void run(){
 			try{
-				yield();
+//				yield();
 				comp.transferFocusBackward();
-				yield();
+//				yield();
 				comp.setBackground( COLOR_FLASH );
 				comp.repaint();
 				sleep( 0x100 );
 				comp.setBackground( background );
 				comp.repaint();
-				yield();
+//				yield();
 			}catch( Throwable thrown ){
 				System.err.println( "warning: Dropdown.Flash.run() caught " + thrown );
 			}

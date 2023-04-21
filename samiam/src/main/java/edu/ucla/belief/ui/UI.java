@@ -1662,11 +1662,11 @@ public class UI extends JFrame implements SamiamUIInt, ActionListener, WindowLis
 	public static boolean isJavaVersionOK()
 	{
 		String version = System.getProperty("java.version");
-		if( Double.parseDouble(version.substring(0, 3)) >= (double)1.4 ) return true;
+		if(Runtime.Version.parse(System.getProperty("java.version")).feature() >= 11 ) return true;
 		else
 		{
 			System.err.println( "You are using Java version " + version + "." );
-			System.err.println( STR_SAMIAM_ACRONYM + " requires Java version 1.4 or higher." );
+			System.err.println( STR_SAMIAM_ACRONYM + " requires Java version 11 or higher." );
 			//System.exit(0);
 			return false;
 		}

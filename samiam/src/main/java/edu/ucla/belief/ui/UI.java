@@ -2540,7 +2540,7 @@ public class UI extends JFrame implements SamiamUIInt, ActionListener, WindowLis
 						group.enumerate( threads );
 						for( int i=0; i<threads.length; i++ ){
 							if( (threads[i] != null) && (! threads[i].isDaemon()) ){
-								threads[i].stop( new Error() );
+								threads[i].stop(  );
 							}
 						}
 						group.list();

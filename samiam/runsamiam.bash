@@ -31,7 +31,7 @@ vmargs="-Xms8m -Xmx512m -classpath ${SAMIAMHOME}samiam.jar:${SAMIAMHOME}inflib.j
 type "${javalauncher}" >/dev/null 2>&1 && {
   execcmd=`type "${javalauncher}" 2>&1 | sed -ne 's#^[^/]*\([^)]*\).*$#\1#;\#'"${javalauncher}"'#p'`
   {
-    ${execcmd} ${vmargs} -launchcommand "${execcmd} ${vmargs} $*" -launchscript "$0" $*
+    "${execcmd}" ${vmargs} -launchcommand "${execcmd} ${vmargs} $*" -launchscript "$0" $*
     echo $?   >"${STATUS}" 2>/dev/null
   } 2>&1 | tee "${ERRORS}"
   [   -e       "${STATUS}" ] && exitstatus=`cat "${STATUS}"` || exitstatus=0
@@ -39,7 +39,7 @@ type "${javalauncher}" >/dev/null 2>&1 && {
     msg='Java exited with an error code ['"${exitstatus}"'].'
     [ -e       "${ERRORS}" ] && grep -qF 'calljvmti' "${ERRORS}" >/dev/null 2>&1 && {
       touch    "${SUPPRESS}" >/dev/null 2>&1
-      ${execcmd} ${vmargssafe} -launchcommand "${execcmd} ${vmargs} $*" -launchscript "$0" $*
+      "${execcmd}" ${vmargssafe} -launchcommand "${execcmd} ${vmargs} $*" -launchscript "$0" $*
       msg=
     }
     [ "${msg}" ] && echo "${msg}" 1>&2
